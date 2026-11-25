@@ -1,0 +1,28 @@
+{
+  "description": "Constella memory for Codex without the plugin. Copy into ~/.codex/hooks.json (or merge into an existing one) and replace /ABSOLUTE/PATH/TO/constella-plugin with the real folder. Codex ignores PreCompact text, so there is no PreCompact hook here; after a compaction, SessionStart (source \"compact\") asks for a handoff instead.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/ABSOLUTE/PATH/TO/constella-plugin/scripts/constella-hook.mjs\" start --client codex",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/ABSOLUTE/PATH/TO/constella-plugin/scripts/constella-hook.mjs\" file --client codex",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

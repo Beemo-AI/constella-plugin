@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "constella": {
+      "type": "http",
+      "url": "https://api.constella.app/mcp",
+      "http_headers": {
+        "X-Constella-Client": "codex",
+        "X-Constella-Tools": "catalog"
+      }
+    }
+  }
+}

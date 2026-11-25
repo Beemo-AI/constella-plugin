@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "constella": {
+      "url": "https://api.constella.app/mcp",
+      "headers": {
+        "X-Constella-Client": "cursor"
+      }
+    }
+  }
+}

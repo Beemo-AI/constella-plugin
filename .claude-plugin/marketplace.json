@@ -1,0 +1,15 @@
+{
+  "name": "constella",
+  "owner": {
+    "name": "Constella",
+    "url": "https://www.constella.app"
+  },
+  "description": "Constella memory for coding agents.",
+  "plugins": [
+    {
+      "name": "constella",
+      "source": "./",
+      "description": "One memory for all your coding agents: decisions, rules and handoffs per repo, shared across AI tools."
+    }
+  ]
+}

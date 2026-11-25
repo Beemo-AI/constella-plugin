@@ -1,0 +1,31 @@
+{
+  "name": "constella",
+  "version": "0.1.0",
+  "description": "One memory for all your coding agents. Decisions, rules and handoffs saved in Constella come back in every session, in every AI tool, for the repo you are in.",
+  "author": {
+    "name": "Constella",
+    "url": "https://www.constella.app"
+  },
+  "homepage": "https://www.constella.app/dev/docs",
+  "privacyPolicyUrl": "https://www.constella.app/legal/privacy-policy",
+  "keywords": ["memory", "handoff", "decisions", "mcp", "constella"],
+  "network": {
+    "hosts": ["api.constella.app"]
+  },
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "Constella API key",
+      "description": "Optional. A key from the Constella desktop app (Settings > Developer). With it, memory for this repo loads at session start and before edits. Without it, the tools still work after a browser sign-in.",
+      "sensitive": true,
+      "required": false
+    },
+    "save_to": {
+      "type": "string",
+      "title": "Save memories to",
+      "description": "Where new memories go. \"me\" is your own memory.",
+      "default": "me",
+      "required": false
+    }
+  }
+}
