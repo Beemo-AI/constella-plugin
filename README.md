@@ -8,7 +8,7 @@ One memory for all your AI coding tools.
 - When you stop or switch tools, the AI saves a handoff (goal, done, next, open questions), so the next one picks up.
 - It all lives in your Constella account, so you can see and change it in the Constella app.
 
-The repo is `Beemo-AI/constella-plugin` on GitHub. It is private for now (early access), so the install lines below work only for people who can see it. Anyone with a clone can use the local folder path instead.
+The repo is `Beemo-AI/constella-plugin` on GitHub. You can install from there, or from a clone on your machine with the local folder path.
 
 ## What is in here
 

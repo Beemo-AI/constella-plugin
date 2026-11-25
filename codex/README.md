@@ -9,7 +9,7 @@ Want to be walked through it? Do step 1, then start Codex in your repo and run t
 ### 1. Install
 
 ```sh
-# From GitHub (the repo is private for now), or from a clone on your machine:
+# From GitHub, or from a clone on your machine:
 codex plugin marketplace add Beemo-AI/constella-plugin
 codex plugin marketplace add /path/to/constella-plugin   # the local way
 
