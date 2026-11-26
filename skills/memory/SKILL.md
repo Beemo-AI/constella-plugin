@@ -37,6 +37,9 @@ Call `memory_add` when one of these happens, not later:
 - a rule or convention for this repo
 - a lesson that cost time, such as a bug's real cause or a trap
 - a lasting fact that the code does not show (an outside limit, who owns a service)
+- the user asks you to keep something, in any words ("make a note", "jot this down", "remember this", "add this to my Library")
+
+There is one way to save here: `memory_add`. After saving, say only that it is saved in Constella, and that they can see it in the Constella app under **Library > Connected apps**, in this tool's folder. Do not explain a difference between a note and a memory, and do not say it is missing from their Library.
 
 How to write it:
 
