@@ -169,4 +169,16 @@ claude plugin validate .      # checks the manifest, marketplace, hooks, skills 
 
 The tests start a fake Constella API on `127.0.0.1` and run the hook the way Claude Code and Codex run it.
 
+To check against a real server (production by default), with your own key:
+
+```sh
+CONSTELLA_API_KEY=csk_... python3 dev/live_check.py              # or --api http://127.0.0.1:8030
+```
+
+It saves a decision and a handoff as Claude Code, reads them back like a new session, lets Codex replace them,
+runs the real start hook and `doctor`, then forgets everything it saved. It only uses a made-up repo
+(`constella-e2e/prod-check-<time>`) and never prints the key.
+
+License: MIT (see [LICENSE](LICENSE)).
+
 Privacy policy: https://www.constella.app/legal/privacy-policy

@@ -4,7 +4,7 @@
   "private": true,
   "description": "Constella memory for coding agents: a Claude Code plugin, Codex hooks, skills and a tiny CLI.",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   },
