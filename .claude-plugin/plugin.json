@@ -8,9 +8,18 @@
   },
   "homepage": "https://www.constella.app/dev/docs",
   "privacyPolicyUrl": "https://www.constella.app/legal/privacy-policy",
-  "keywords": ["memory", "handoff", "decisions", "mcp", "constella"],
+  "keywords": [
+    "memory",
+    "handoff",
+    "decisions",
+    "mcp",
+    "constella"
+  ],
+  "mcpServers": "./claude-code/mcp.json",
   "network": {
-    "hosts": ["api.constella.app"]
+    "hosts": [
+      "api.constella.app"
+    ]
   },
   "userConfig": {
     "api_key": {

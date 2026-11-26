@@ -63,12 +63,7 @@ export function savedFor(wantedBase, env = process.env) {
 /** Save credentials (temp file then rename; only this user can read them). Returns the file path. */
 export function writeCredentials({ api_key, api_url, email = '' }, env = process.env) {
   const dir = homeDir(env);
-  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  try {
-    fs.chmodSync(dir, 0o700);
-  } catch {
-    /* Windows: no modes */
-  }
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 }); // a folder that is already there keeps its own mode
   const file = credentialsFile(env);
   const tmp = `${file}.${process.pid}.tmp`;
   const body = { api_key, api_url: String(api_url).replace(/\/+$/, ''), email, saved_at: new Date().toISOString() };

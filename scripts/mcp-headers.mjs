@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Claude Code runs this before it connects to the plugin's MCP server (`headersHelper` in .mcp.json) and adds
+// Claude Code runs this before it connects to the plugin's MCP server (`headersHelper` in claude-code/mcp.json) and adds
 // the JSON object printed here to the request headers. With a key (the plugin option, CONSTELLA_API_KEY, or
 // the one `constella setup` saved) it prints the Authorization header, so there is no browser sign-in. With
 // no key it prints {} and Claude Code signs in through the browser as before. The key goes nowhere but

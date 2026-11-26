@@ -14,7 +14,7 @@ The repo is `Beemo-AI/constella-plugin` on GitHub. You can install from there, o
 
 | Part | What it does |
 |---|---|
-| `.mcp.json` | Connects the `constella` MCP server (`memory_recall`, `memory_add` and more). |
+| `claude-code/mcp.json` | Connects the `constella` MCP server (`memory_recall`, `memory_add` and more). It is not at the repo root on purpose: there, Claude Code would also load it as this folder's own project server. |
 | `hooks/hooks.json` + `scripts/constella-hook.mjs` | Loads memory at session start and before edits. Keeps decisions through compaction. |
 | `skills/memory` | Tells the AI when to read memory, what to save, and how to hand off. |
 | `skills/init` | `/constella:init`: checks the setup (in Codex it walks you through it), then seeds memory from the repo's docs. You pick what is kept. |
