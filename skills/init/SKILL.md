@@ -35,7 +35,7 @@ Rules for the whole walk-through:
 **Step 2. The key (for the hooks).** Run `node "[plugin folder]/scripts/constella.mjs" doctor --client codex` from the repo. It prints `ok`, `FAIL` or `skip` lines for `node`, `repo`, `key` and `api`. It never prints the key.
 - All `ok`: done.
 - `FAIL key`, or `FAIL api ... could not be reached`: your own shell may be the cause, not the user's setup. Codex can hide variables from your commands, and the sandbox can block the network. Ask the user to run the same command in their own terminal and tell you only the first word of each line.
-- The user's run also says `FAIL key`: tell them to make a key in the Constella desktop app (**Settings > Developer**), add `export CONSTELLA_API_KEY="csk_..."` to their shell profile, and open a new terminal. They must not paste the key into this chat.
+- The user's run also says `FAIL key`: tell them to run `npx -y github:Beemo-AI/constella-plugin setup` in a terminal (it signs them in once in the browser and saves the key), or to make a key in the Constella desktop app (**Settings > Developer**), add `export CONSTELLA_API_KEY="csk_..."` to their shell profile, and open a new terminal. They must not paste the key into this chat.
 - `FAIL api ... did not accept the key`: the key is wrong or deleted. They need a new one.
 - The user does not want a key: that is fine. Say that memory then loads only when you call `memory_recall`, and go on.
 

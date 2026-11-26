@@ -1,6 +1,6 @@
 {
   "name": "constella-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Constella memory for coding agents: a Claude Code plugin, Codex hooks, skills and a tiny CLI.",
   "type": "module",

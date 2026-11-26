@@ -98,6 +98,9 @@ export function makeRepo({ remote, branch = 'main', name = 'widget' } = {}) {
 export function cleanEnv(extra = {}) {
   const env = { PATH: process.env.PATH, HOME: process.env.HOME, TMPDIR: process.env.TMPDIR || os.tmpdir() };
   // Keep the machine's own git settings (and any global git hooks) out of the tests.
+  // Never the developer's own saved key, and never a real browser tab.
+  env.CONSTELLA_HOME = path.join(os.tmpdir(), 'constella-test-no-such-home');
+  env.CONSTELLA_NO_BROWSER = '1';
   env.GIT_CONFIG_NOSYSTEM = '1';
   env.GIT_CONFIG_GLOBAL = os.devNull;
   for (const [k, v] of Object.entries(extra)) if (v !== undefined) env[k] = v;

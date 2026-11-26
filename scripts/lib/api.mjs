@@ -3,20 +3,40 @@
 // Errors come back as {"detail": {"code", "message"}}. Auth is `Authorization: Bearer <key>`;
 // `X-Constella-Client` names the AI tool, so the server files its saves under that tool.
 
-export const VERSION = '0.1.0';
+import { savedFor } from './credentials.mjs';
+
+export const VERSION = '0.2.0';
 export const DEFAULT_API = 'https://api.constella.app';
+
+/** CONSTELLA_API_URL with no trailing slash, or '' when the person did not set one. */
+function wantedBase(env) {
+  return String(env.CONSTELLA_API_URL || '').trim().replace(/\/+$/, '');
+}
 
 /**
  * The person's Constella key: the plugin option `api_key` (Claude Code exports it as
- * CLAUDE_PLUGIN_OPTION_API_KEY), else CONSTELLA_API_KEY. '' when neither is set.
+ * CLAUDE_PLUGIN_OPTION_API_KEY), else CONSTELLA_API_KEY, else the key `constella setup` saved on this
+ * machine (only when it was saved for the server we are about to call). '' when there is none.
  */
 export function apiKey(env = process.env) {
-  return String(env.CLAUDE_PLUGIN_OPTION_API_KEY || env.CONSTELLA_API_KEY || '').trim();
+  const fromEnv = String(env.CLAUDE_PLUGIN_OPTION_API_KEY || env.CONSTELLA_API_KEY || '').trim();
+  if (fromEnv) return fromEnv;
+  const saved = savedFor(wantedBase(env), env);
+  return saved ? saved.api_key : '';
 }
 
-/** The API base URL with no trailing slash: CONSTELLA_API_URL, else https://api.constella.app. */
+/**
+ * The API base URL with no trailing slash: CONSTELLA_API_URL, else the server the saved key belongs to (when
+ * the saved key is the one in use), else https://api.constella.app.
+ */
 export function apiBase(env = process.env) {
-  return String(env.CONSTELLA_API_URL || DEFAULT_API).trim().replace(/\/+$/, '') || DEFAULT_API;
+  const wanted = wantedBase(env);
+  if (wanted) return wanted;
+  if (!String(env.CLAUDE_PLUGIN_OPTION_API_KEY || env.CONSTELLA_API_KEY || '').trim()) {
+    const saved = savedFor('', env);
+    if (saved) return saved.api_url;
+  }
+  return DEFAULT_API;
 }
 
 /** Where saves go ("me" today; a team box later): plugin option `save_to`, else CONSTELLA_SAVE_TO, else "me". */

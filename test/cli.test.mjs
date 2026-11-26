@@ -103,7 +103,7 @@ describe('constella CLI', () => {
     assert.equal(lines.length, 4);
     assert.match(lines[0], /^ok\s+node\s+v\d+/);
     assert.match(lines[1], /^ok\s+repo\s+acme\/widget \(branch feat\/login\)$/);
-    assert.match(lines[2], /^ok\s+key\s+a key is set \(not shown\)$/);
+    assert.match(lines[2], /^ok\s+key\s+a key was found \(not shown\)$/);
     assert.match(lines[3], /^ok\s+api\s+http:\/\/127\.0\.0\.1:\d+ answered/);
     assert.ok(!res.stdout.includes(FAKE_KEY) && !res.stderr.includes(FAKE_KEY));
     const req = api.requests.at(-1);
@@ -116,7 +116,7 @@ describe('constella CLI', () => {
     const before = api.requests.length;
     const res = await cli(api, ['doctor'], { key: null });
     assert.equal(res.code, 1);
-    assert.match(res.stdout, /^FAIL\s+key\s+CONSTELLA_API_KEY is not set/m);
+    assert.match(res.stdout, /^FAIL\s+key\s+no key found here; run \"constella setup\"/m);
     assert.match(res.stdout, /^skip\s+api\s/m);
     assert.match(res.stdout, /^ok\s+repo\s/m);
     assert.equal(api.requests.length, before);

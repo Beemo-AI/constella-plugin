@@ -4,6 +4,16 @@ Checked against Codex CLI `codex-cli 0.153.2` on 2026-11-24. Codex changes fast.
 
 Want to be walked through it? Do step 1, then start Codex in your repo and run the `constella:init` skill. It checks each step with you, one at a time.
 
+## The short way
+
+```sh
+npx -y github:Beemo-AI/constella-plugin setup
+```
+
+It signs you in once in the browser, installs the plugin, and writes the `constella` server (with your key) into `~/.codex/config.toml`, so steps 1, 2 and 3 below are done for you. The Codex CLI, the Codex app and the IDE extension share that file. Step 4, trusting the hooks, is still yours: Codex wants a person to do it. You can also paste the setup prompt from the [main README](../README.md#set-up-in-one-step) into Codex and let it run the command.
+
+The steps below are the same thing by hand.
+
 ## Setup
 
 ### 1. Install

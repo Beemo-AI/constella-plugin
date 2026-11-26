@@ -19,13 +19,45 @@ The repo is `Beemo-AI/constella-plugin` on GitHub. You can install from there, o
 | `skills/memory` | Tells the AI when to read memory, what to save, and how to hand off. |
 | `skills/init` | `/constella:init`: checks the setup (in Codex it walks you through it), then seeds memory from the repo's docs. You pick what is kept. |
 | `skills/handoff` | `/constella:handoff`: saves a handoff now. |
-| `scripts/constella.mjs` | A tiny command line tool for shells and cloud agents. |
+| `scripts/constella.mjs` | A tiny command line tool: `setup` (one-step install), `doctor`, and memory commands for shells and cloud agents. |
+| `scripts/mcp-headers.mjs` | Hands the saved key to Claude Code's MCP connection, so there is no second sign-in. |
 | `AGENTS.snippet.md` | The same rules as a block to paste into `AGENTS.md`, for tools without skills. |
 | `codex/`, `cursor/` | Setup for Codex and Cursor. |
 
 No npm packages. It needs Node 18 or newer.
 
-## Install
+## Set up in one step
+
+Paste this into Claude Code or Codex:
+
+```text
+Set up Constella memory for my coding agents. Run this command and wait for it to finish
+(give it two minutes; it needs the network and writes to my home folder, so ask me if you need permission):
+
+  npx -y github:Beemo-AI/constella-plugin setup
+
+It opens my browser so I can sign in to Constella. If it says it is still waiting for me, tell me to
+finish in the browser, then run the same command again. At the end, tell me the steps it says only I can do.
+Never print my API key.
+```
+
+Or run the command yourself in a terminal: `npx -y github:Beemo-AI/constella-plugin setup`.
+
+What it does:
+
+1. **Signs you in once**, in your browser, on Constella's own sign-in page (Google, an emailed code, or your password). New here? The same step makes your account. The page says it will hand your API key to this computer; you press **Allow**.
+2. **Saves your key** in `~/.constella/credentials.json`, readable only by you. The hooks and the plugin's MCP server read it from there, so there is no second sign-in and nothing to add to your shell profile.
+3. **Sets up every AI tool it finds:** the plugin in Claude Code, the plugin and the server entry in Codex, the server entry in Cursor.
+4. **Tells you what only you can do.** For Codex that is trusting the hooks (`/hooks`).
+
+It is safe to run again: it repairs and updates. Good to know:
+
+- No browser on this machine (SSH, a cloud box)? Make a key in the Constella app (**Settings > Developer**) and run `CONSTELLA_API_KEY=csk_... npx -y github:Beemo-AI/constella-plugin setup`.
+- `--only claude,codex` sets up just those tools. `--no-open` prints the sign-in link instead of opening it.
+- `npx -y github:Beemo-AI/constella-plugin logout` forgets the saved key. `doctor` checks the setup.
+- Codex keeps the key inside `~/.codex/config.toml` and Cursor inside `~/.cursor/mcp.json` (both are files only you can read). Claude Code's settings never hold it.
+
+## Install by hand
 
 ### Claude Code
 
@@ -89,7 +121,9 @@ Without a key, it works. The tools sign in through the browser. The AI reads mem
 
 With a key, it is better. The hooks load memory for the repo by themselves at session start and before edits, so the AI never forgets to look.
 
-Get a key in the Constella desktop app: **Settings > Developer**. Then give it to the plugin:
+`constella setup` (above) fetches and saves the key for you. A key is looked for in this order: the plugin option, then `CONSTELLA_API_KEY`, then the file setup saved. The saved key is only ever sent to the server it was saved for.
+
+To do it by hand instead, get a key in the Constella desktop app: **Settings > Developer**. Then give it to the plugin:
 
 - Claude Code: `/plugin configure constella@constella` in a session (it is stored in your system's secure store, not in a settings file). Or from a shell: `claude plugin configure constella@constella --values-stdin < values.json`, where `values.json` holds `{"api_key": "csk_..."}`. Delete that file afterwards.
 - Codex, Cursor, scripts and cloud agents: set the environment variable `CONSTELLA_API_KEY`.
@@ -105,6 +139,8 @@ The hooks send only these to `api.constella.app`, over HTTPS:
 
 The AI also sends the memories it chooses to save, with `memory_add`.
 
+`constella setup` also sends the email you use for Claude Code (read from `~/.claude.json`) to Constella's sign-in page, only to fill in the email box. Pass `--email ""` to leave it out.
+
 Never sent: file contents, your prompts, the session transcript, the branch name (it only shows up locally, in the text the AI sees), or the key anywhere except the `Authorization` header.
 
 ## What is stored where
@@ -113,7 +149,7 @@ Never sent: file contents, your prompts, the session transcript, the branch name
 - **On this machine:** small files in the plugin's data folder (`~/.claude/plugins/data/...` in Claude Code, Codex's plugin data folder in Codex, else your temp folder under `constella-agent-plugin`):
   - `sessions/<session id>.json`: which folders were already looked up, and which memory ids were already shown, in each session. Deleted after a week.
   - `debug.log`: only when `CONSTELLA_DEBUG=1`.
-- **The key:** in Claude Code's secure store (when set with `/plugin configure`), or in your own environment variable.
+- **The key:** in `~/.constella/credentials.json` (when `constella setup` saved it; mode 600), in Claude Code's secure store (when set with `/plugin configure`), or in your own environment variable. Setup also writes it into `~/.codex/config.toml` and `~/.cursor/mcp.json` when those tools are found.
 
 ## Cloud agents
 

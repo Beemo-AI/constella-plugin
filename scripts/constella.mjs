@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 // A tiny Constella memory command for shells and cloud agents (no npm packages, Node 18+).
-// It needs one secret, CONSTELLA_API_KEY, and talks HTTPS to the Constella API. It prints JSON.
+// It needs one secret, a Constella key (CONSTELLA_API_KEY, or the one `constella setup` saved on this
+// computer), and talks HTTPS to the Constella API. It prints JSON.
 //
+//   constella setup   [--wait s] [--no-open] [--email a@b.c] [--only claude,codex,cursor]
+//                                                     sign in once in the browser, then set memory up in every AI tool here
+//   constella logout                                  forget the key saved on this computer
 //   constella where                                   repo, branch and the ready-made handoff id (no key needed)
 //   constella doctor                                  setup check: one ok / FAIL / skip line each for node, repo, key, api
 //   constella recall  [--repo r] [--query q] [--files a,b] [--limit n]
@@ -10,16 +14,25 @@
 //   common: [--client name]  (default "agents"; sent as X-Constella-Client)
 //
 // With no --repo, the repo is read from git in the current folder (origin remote, else folder name).
-// Exit codes: 0 ok, 1 the call failed (or a doctor check failed), 2 wrong usage or no key. The key is never printed.
+// Exit codes: 0 ok, 1 the call failed (or a doctor check failed), 2 wrong usage or no key, 3 setup is still
+// waiting for the browser sign-in (run it again). The key is never printed.
+
+import { fileURLToPath } from 'node:url';
 
 import { apiBase, apiKey, callTool, saveTo } from './lib/api.mjs';
 import { handoffId } from './lib/format.mjs';
 import { detectRepo, normalizeRepo } from './lib/repo.mjs';
+import { runLogout, runSetup } from './lib/setup.mjs';
+import { runSignIn } from './lib/signin.mjs';
 
 process.emitWarning = () => {};
 
 const USAGE = `Constella memory from the command line.
 
+  constella setup   (sign in once in your browser, then set memory up in Claude Code, Codex and Cursor on
+                    this computer; safe to run again. Options: --wait <seconds, default 100> --no-open
+                    --email <address to fill in on the sign-in page> --only claude,codex,cursor)
+  constella logout  (forget the key saved on this computer)
   constella where   (prints this folder's repo, branch and handoff id; needs no key)
   constella doctor  (checks the setup: node, repo, key, api; plain lines, not JSON; exit 1 if one fails)
   constella recall  [--repo owner/name] [--query "..."] [--files a.ts,b.ts] [--limit 8]
@@ -30,11 +43,12 @@ const USAGE = `Constella memory from the command line.
 
 Options for all: --client <name> (default "agents"), --help.
 Ids may only use letters, digits and . _ : @ - (at most 128 characters).
-Needs CONSTELLA_API_KEY (from the Constella desktop app: Settings > Developer).
+Needs a key: run "constella setup" once, or set CONSTELLA_API_KEY (Constella app: Settings > Developer).
 CONSTELLA_API_URL changes the server (default https://api.constella.app).
 `;
 
-const FLAGS = new Set(['repo', 'branch', 'query', 'files', 'limit', 'text', 'kind', 'id', 'path', 'replaces', 'to', 'title', 'client']);
+const FLAGS = new Set(['repo', 'branch', 'query', 'files', 'limit', 'text', 'kind', 'id', 'path', 'replaces', 'to', 'title', 'client', 'wait', 'email', 'only', 'no-open']);
+const SWITCHES = new Set(['no-open']); // flags that take no value
 
 /** Split argv into a command and --flag values. Unknown flags are an error, so typos are not silently dropped. */
 function parseArgs(argv) {
@@ -50,7 +64,9 @@ function parseArgs(argv) {
         out.error = `unknown option --${name}`;
         return out;
       }
-      if (eq > 0) {
+      if (SWITCHES.has(name)) {
+        out.flags[name] = true;
+      } else if (eq > 0) {
         out.flags[name] = arg.slice(eq + 1);
       } else if (i + 1 < argv.length) {
         out.flags[name] = argv[(i += 1)];
@@ -142,10 +158,10 @@ async function doctor(flags, env = process.env) {
   const key = apiKey(env);
   const base = apiBase(env);
   if (!key) {
-    say('FAIL', 'key', 'CONSTELLA_API_KEY is not set here; make a key in the Constella desktop app (Settings > Developer) and export it in your shell profile');
+    say('FAIL', 'key', 'no key found here; run "constella setup" (it signs you in once in the browser), or set CONSTELLA_API_KEY');
     say('skip', 'api', `${base} was not called, because there is no key`);
   } else {
-    say('ok', 'key', 'a key is set (not shown)');
+    say('ok', 'key', 'a key was found (not shown)');
     const args = { limit: 1 };
     if (repo) args.repo = repo;
     const res = await callTool({ base, key, client: flags.client || 'agents', name: 'memory_recall', args, timeoutMs: 10000 });
@@ -178,9 +194,16 @@ async function main() {
     return 0;
   }
   if (parsed.command === 'doctor') return doctor(parsed.flags);
+  if (parsed.command === 'setup') return runSetup({ flags: parsed.flags, cliPath: fileURLToPath(import.meta.url) });
+  if (parsed.command === 'logout') return runLogout();
+  if (parsed.command === '_signin') {
+    // The browser sign-in's helper process (started by setup; not for people to run).
+    await runSignIn(process.env, { emailHint: parsed.flags.email || '' });
+    return 0;
+  }
   const key = apiKey();
   if (!key) {
-    print({ ok: false, error: 'CONSTELLA_API_KEY is not set. Make a key in the Constella desktop app: Settings > Developer.' });
+    print({ ok: false, error: 'No key found. Run "constella setup", or set CONSTELLA_API_KEY (Constella app: Settings > Developer).' });
     return 2;
   }
   const call = await buildCall(parsed);
