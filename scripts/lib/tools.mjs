@@ -14,8 +14,13 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { sameServer } from './credentials.mjs';
+import { homeDir, sameServer } from './credentials.mjs';
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const OPENCODE_PLUGIN_ID = 'constella-memory';
+const OPENCODE_PLUGIN_FILES = ['index.mjs', 'plugin.mjs', 'client.mjs', 'format.mjs', 'transcript.mjs', 'package.json'];
 
 export const MARKETPLACE_SOURCE = 'Beemo-AI/constella-plugin';
 const PLUGIN = 'constella@constella';
@@ -190,4 +195,142 @@ export function setUpCursor({ env = process.env, mcp, key } = {}) {
     return { state: 'FAIL', text: `${file} could not be written (${String((err && err.message) || err)})` };
   }
   return { state: 'ok', text: `memory tools added to ${file} (Cursor has no hooks: its skills are a copy step, see cursor/README.md)` };
+}
+
+// --------------------------------------------------------------------------------------------------- OpenCode
+
+/** Folder where OpenCode reads its user config (`opencode.json` / `opencode.jsonc`). */
+export function openCodeHome(env = process.env) {
+  if (env.CONSTELLA_OPENCODE_HOME) return env.CONSTELLA_OPENCODE_HOME;
+  const xdg = env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+  return path.join(xdg, 'opencode');
+}
+
+/**
+ * Parse JSON or JSONC (line `//`, block `/* *\/`, and trailing commas outside string literals).
+ * Throws SyntaxError on invalid input.
+ */
+export function parseJsonc(raw) {
+  let out = '';
+  let inString = false;
+  let escape = false;
+  let i = 0;
+  const text = String(raw || '');
+  while (i < text.length) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (inString) {
+      out += ch;
+      if (escape) escape = false;
+      else if (ch === '\\') escape = true;
+      else if (ch === '"') inString = false;
+      i += 1;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === '/' && next === '/') {
+      i += 2;
+      while (i < text.length && text[i] !== '\n') i += 1;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      i += 2;
+      while (i < text.length && !(text[i] === '*' && text[i + 1] === '/')) i += 1;
+      i += 2;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  const withoutTrailingCommas = out.replace(/,\s*([}\]])/g, '$1');
+  return JSON.parse(withoutTrailingCommas);
+}
+
+/** Return a copy of OpenCode's config object with `constella-memory` registered once under `plugins`. */
+export function withOpenCodePlugin(config, pluginSource) {
+  const base = config && typeof config === 'object' && !Array.isArray(config) ? { ...config } : {};
+  const existing = Array.isArray(base.plugins) ? base.plugins : [];
+  let prevOptions = null;
+  const kept = [];
+  for (const entry of existing) {
+    if (typeof entry === 'string') {
+      if (entry === OPENCODE_PLUGIN_ID || entry.includes('constella-plugin') || entry.includes('opencode-plugin')) continue;
+      kept.push(entry);
+      continue;
+    }
+    if (entry && typeof entry === 'object' && entry.id === OPENCODE_PLUGIN_ID) {
+      if (entry.options && typeof entry.options === 'object' && !Array.isArray(entry.options)) {
+        prevOptions = { ...entry.options };
+      }
+      continue;
+    }
+    kept.push(entry);
+  }
+  const options = { recallMode: 'hybrid', ...(prevOptions || {}) };
+  kept.push({ id: OPENCODE_PLUGIN_ID, source: pluginSource, options });
+  base.plugins = kept;
+  return base;
+}
+
+/** Copy the self-contained `opencode/` plugin files into `~/.constella/opencode-plugin` (stable across npx runs). */
+function installOpenCodeFiles(env) {
+  const srcDir = path.join(REPO_ROOT, 'opencode');
+  const destDir = path.join(homeDir(env), 'opencode-plugin');
+  fs.mkdirSync(destDir, { recursive: true, mode: 0o700 });
+  for (const name of OPENCODE_PLUGIN_FILES) {
+    const src = path.join(srcDir, name);
+    if (!fs.existsSync(src)) continue;
+    const content = fs.readFileSync(src, 'utf8');
+    writeFileAtomic(path.join(destDir, name), content, 0o644);
+  }
+  return destDir;
+}
+
+/**
+ * Install the Constella OpenCode v2 plugin when OpenCode is installed on this computer.
+ * Writes NO secrets into `opencode.json` — the plugin reads `~/.constella/credentials.json` directly.
+ */
+export function setUpOpenCode({ env = process.env, source } = {}) {
+  const explicitDir = Boolean(env.CONSTELLA_OPENCODE_HOME && fs.existsSync(env.CONSTELLA_OPENCODE_HOME));
+  if (!found('opencode', env) && !explicitDir) return { state: 'skip', text: 'not found on this computer' };
+
+  const dir = openCodeHome(env);
+  fs.mkdirSync(dir, { recursive: true });
+  const jsoncPath = path.join(dir, 'opencode.jsonc');
+  const jsonPath = path.join(dir, 'opencode.json');
+  const file = fs.existsSync(jsoncPath) ? jsoncPath : jsonPath;
+
+  let config = {};
+  if (fs.existsSync(file)) {
+    try {
+      config = parseJsonc(fs.readFileSync(file, 'utf8'));
+    } catch {
+      return { state: 'FAIL', text: `${file} is not valid JSON/JSONC, so it was left alone; fix it and run setup again` };
+    }
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+      return { state: 'FAIL', text: `${file} is not a JSON object, so it was left alone` };
+    }
+  }
+
+  let pluginSource = env.CONSTELLA_OPENCODE_SOURCE || (source && source !== MARKETPLACE_SOURCE ? source : '');
+  if (!pluginSource) {
+    try {
+      pluginSource = installOpenCodeFiles(env);
+    } catch (err) {
+      return { state: 'FAIL', text: `could not copy OpenCode plugin files (${String((err && err.message) || err)})` };
+    }
+  }
+
+  const updated = withOpenCodePlugin(config, pluginSource);
+  try {
+    writeFileAtomic(file, `${JSON.stringify(updated, null, 2)}\n`, modeOf(file, 0o600));
+  } catch (err) {
+    return { state: 'FAIL', text: `${file} could not be written (${String((err && err.message) || err)})` };
+  }
+  return { state: 'ok', text: `plugin registered in ${file} (reads your saved key from ~/.constella/credentials.json)` };
 }

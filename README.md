@@ -22,7 +22,7 @@ The repo is `Beemo-AI/constella-plugin` on GitHub. You can install from there, o
 | `scripts/constella.mjs` | A tiny command line tool: `setup` (one-step install), `doctor`, and memory commands for shells and cloud agents. |
 | `scripts/mcp-headers.mjs` | Hands the saved key to Claude Code's MCP connection, so there is no second sign-in. |
 | `AGENTS.snippet.md` | The same rules as a block to paste into `AGENTS.md`, for tools without skills. |
-| `codex/`, `cursor/` | Setup for Codex and Cursor. |
+| `codex/`, `cursor/`, `opencode/` | Setup for Codex and Cursor, plus the OpenCode v2 plugin (`@opencode/plugin`). |
 
 No npm packages. It needs Node 18 or newer.
 
@@ -47,7 +47,7 @@ What it does:
 
 1. **Signs you in once**, in your browser, on Constella's own sign-in page (Google, an emailed code, or your password). New here? The same step makes your account. The page says it will hand your API key to this computer; you press **Allow**.
 2. **Saves your key** in `~/.constella/credentials.json`, readable only by you. The hooks and the plugin's MCP server read it from there, so there is no second sign-in and nothing to add to your shell profile.
-3. **Sets up every AI tool it finds:** the plugin in Claude Code, the plugin and the server entry in Codex, the server entry in Cursor.
+3. **Sets up every AI tool it finds:** the plugin in Claude Code, the plugin and the server entry in Codex, the server entry in Cursor, and the v2 plugin in OpenCode.
 4. **Tells you what only you can do.** For Codex that is trusting the hooks (`/hooks`).
 
 It is safe to run again: it repairs and updates. Good to know:
