@@ -18,7 +18,7 @@ import path from 'node:path';
 import { DEFAULT_API, VERSION } from './api.mjs';
 import { readCredentials, removeCredentials, sameServer, savedFor, writeCredentials } from './credentials.mjs';
 import { clearSignIn, liveSignIn, openBrowser, readSignIn, startSignInHelper } from './signin.mjs';
-import { MARKETPLACE_SOURCE, setUpClaudeCode, setUpCodex, setUpCursor } from './tools.mjs';
+import { MARKETPLACE_SOURCE, setUpClaudeCode, setUpCodex, setUpCursor, setUpOpenCode } from './tools.mjs';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -172,6 +172,7 @@ export async function runSetup({ env = process.env, flags = {}, cliPath, out = (
     ['claude', () => setUpClaudeCode({ env: toolEnv, mcp, source })],
     ['codex', () => setUpCodex({ env: toolEnv, mcp, key: found.key, source })],
     ['cursor', () => setUpCursor({ env: toolEnv, mcp, key: found.key })],
+    ['opencode', () => setUpOpenCode({ env: toolEnv })],
   ];
   let installed = 0;
   for (const [name, step] of steps) {
@@ -187,7 +188,7 @@ export async function runSetup({ env = process.env, flags = {}, cliPath, out = (
     if (result.todo) todos.push(result.todo);
   }
   if (!installed && !lines.some((l) => l.startsWith('FAIL'))) {
-    say('FAIL', 'tools', 'no AI tool was found here (looked for Claude Code, Codex and Cursor). Your key is saved, so memory works once you install one and run this again.');
+    say('FAIL', 'tools', 'no AI tool was found here (looked for Claude Code, Codex, Cursor and OpenCode). Your key is saved, so memory works once you install one and run this again.');
   }
 
   const report = [...lines, ''];

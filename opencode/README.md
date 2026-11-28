@@ -16,7 +16,19 @@ Shared workspace + private personal memory for **OpenCode v2** (`@opencode/plugi
   - `"manual"`: only uploads when `constella_upload_session` is called.
   - Raw transcripts **always** go to `/platform/v1/users/{uid}/ingest` (the member's private box) — never auto-shared to a workspace.
 
-## Quick setup (self-hosted OpenCode v2)
+## Quick setup (solo / personal OpenCode v2 — 1 step)
+
+Run one command (or paste it into OpenCode):
+
+```sh
+npx -y github:Beemo-AI/constella-plugin setup
+```
+
+It signs you in once in the browser, saves your personal key (`csk_...`) to `~/.constella/credentials.json` (mode `600`), installs the OpenCode plugin locally into `~/.constella/opencode-plugin`, and registers it in `~/.config/opencode/opencode.json` (no API key is written into OpenCode's settings). Use `--only opencode` to configure OpenCode alone.
+
+---
+
+## Quick setup (self-hosted OpenCode v2 for teams)
 
 ### 1. Provision workspace & member on your backend (once)
 

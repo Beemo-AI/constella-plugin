@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
 
 import defaultExport, {
   PLUGIN_ID,
@@ -9,6 +12,8 @@ import defaultExport, {
   formatStartBlock,
   TranscriptManager,
 } from '../opencode/index.mjs';
+import { parseJsonc, setUpOpenCode, withOpenCodePlugin } from '../scripts/lib/tools.mjs';
+import { writeCredentials } from '../scripts/lib/credentials.mjs';
 
 /** Start a local HTTP server that records requests and delegates responses to `handler`. */
 async function startMockServer(handler) {
@@ -555,4 +560,81 @@ test('resolveConfig falls back to env vars and TranscriptManager + formatStartBl
   assert.match(formatted.text, /more memories omitted/);
 
   assert.equal(typeof TranscriptManager, 'function');
+});
+
+test('resolveConfig reads ~/.constella/credentials.json in personal mode only and respects same-server guard', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'constella-oc-cred-'));
+  try {
+    const env = { CONSTELLA_HOME: dir };
+    writeCredentials({ api_key: 'csk_saved_personal_key', api_url: 'https://api.constella.app' }, env);
+
+    // Personal mode (no userId, no env token) -> uses saved personal key + api_url.
+    const cfg = resolveConfig({}, env);
+    assert.equal(cfg.token, 'csk_saved_personal_key');
+    assert.equal(cfg.apiUrl, 'https://api.constella.app');
+
+    // Different server -> saved key is NEVER handed out.
+    const otherSrv = resolveConfig({ apiUrl: 'http://127.0.0.1:9999' }, env);
+    assert.equal(otherSrv.token, '');
+
+    // Platform mode (`userId` set) -> never sends personal `csk_` key to `/users/{uid}`.
+    const plat = resolveConfig({ userId: 'user_alice' }, env);
+    assert.equal(plat.token, '');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('parseJsonc, withOpenCodePlugin, and setUpOpenCode install plugin cleanly without writing secrets', () => {
+  const parsed = parseJsonc(`{
+    // comment with url https://example.com
+    "$schema": "https://opencode.ai/config.json",
+    /* block comment */
+    "plugins": ["other-plugin",],
+  }`);
+  assert.equal(parsed.$schema, 'https://opencode.ai/config.json');
+  assert.deepEqual(parsed.plugins, ['other-plugin']);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'constella-oc-setup-'));
+  try {
+    const constellaHome = path.join(dir, 'constella');
+    const opencodeHome = path.join(dir, 'opencode');
+    fs.mkdirSync(opencodeHome, { recursive: true });
+    fs.writeFileSync(
+      path.join(opencodeHome, 'opencode.jsonc'),
+      `{\n  // keep my existing plugin\n  "plugins": ["opencode-wakatime"]\n}\n`
+    );
+
+    const env = { CONSTELLA_HOME: constellaHome, CONSTELLA_OPENCODE_HOME: opencodeHome, PATH: '/usr/bin:/bin' };
+    const r1 = setUpOpenCode({ env });
+    assert.equal(r1.state, 'ok');
+
+    // Plugin files copied into stable ~/.constella/opencode-plugin folder.
+    const installedDir = path.join(constellaHome, 'opencode-plugin');
+    assert.equal(fs.existsSync(path.join(installedDir, 'index.mjs')), true);
+    assert.equal(fs.existsSync(path.join(installedDir, 'client.mjs')), true);
+
+    // Config preserves existing plugin, adds constella-memory once, and contains ZERO keys.
+    const cfg1 = JSON.parse(fs.readFileSync(path.join(opencodeHome, 'opencode.jsonc'), 'utf8'));
+    assert.equal(cfg1.plugins.length, 2);
+    assert.equal(cfg1.plugins[0], 'opencode-wakatime');
+    assert.equal(cfg1.plugins[1].id, 'constella-memory');
+    assert.equal(cfg1.plugins[1].source, installedDir);
+    assert.equal('token' in (cfg1.plugins[1].options || {}), false);
+
+    // Running setup a second time is idempotent (still 2 plugins, preserves custom user options).
+    cfg1.plugins[1].options.recallMode = 'every_turn';
+    fs.writeFileSync(path.join(opencodeHome, 'opencode.jsonc'), JSON.stringify(cfg1, null, 2));
+    const r2 = setUpOpenCode({ env });
+    assert.equal(r2.state, 'ok');
+    const cfg2 = JSON.parse(fs.readFileSync(path.join(opencodeHome, 'opencode.jsonc'), 'utf8'));
+    assert.equal(cfg2.plugins.length, 2);
+    assert.equal(cfg2.plugins[1].options.recallMode, 'every_turn');
+
+    // Helper check
+    const dedup = withOpenCodePlugin({ plugins: ['constella-memory', 'foo'] }, '/tmp/p');
+    assert.equal(dedup.plugins.length, 2);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -47,7 +47,7 @@ What it does:
 
 1. **Signs you in once**, in your browser, on Constella's own sign-in page (Google, an emailed code, or your password). New here? The same step makes your account. The page says it will hand your API key to this computer; you press **Allow**.
 2. **Saves your key** in `~/.constella/credentials.json`, readable only by you. The hooks and the plugin's MCP server read it from there, so there is no second sign-in and nothing to add to your shell profile.
-3. **Sets up every AI tool it finds:** the plugin in Claude Code, the plugin and the server entry in Codex, the server entry in Cursor.
+3. **Sets up every AI tool it finds:** the plugin in Claude Code, the plugin and the server entry in Codex, the server entry in Cursor, and the v2 plugin in OpenCode.
 4. **Tells you what only you can do.** For Codex that is trusting the hooks (`/hooks`).
 
 It is safe to run again: it repairs and updates. Good to know:

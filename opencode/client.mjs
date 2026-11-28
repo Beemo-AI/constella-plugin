@@ -12,8 +12,45 @@
 //
 // Never throws on network or HTTP failures; never leaks the bearer token in returned objects.
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 export const PLUGIN_VERSION = '0.2.0';
 export const DEFAULT_API_URL = 'https://api.constella.app';
+const PRODUCTION_HOSTS = new Set(['api.constella.app', 'fastfind.app', 'www.fastfind.app']);
+
+function hostOf(url) {
+  try {
+    return new URL(String(url)).host.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+function sameServer(a, b) {
+  const [x, y] = [hostOf(a), hostOf(b)];
+  if (!x || !y) return false;
+  return x === y || (PRODUCTION_HOSTS.has(x) && PRODUCTION_HOSTS.has(y));
+}
+
+/**
+ * Read personal key saved by `constella setup` (~/.constella/credentials.json), ONLY when its
+ * saved server matches `wantedBase` (or when `wantedBase` is empty). Never throws.
+ */
+export function readSavedCredentials(wantedBase = '', env = process.env) {
+  try {
+    const home = env.CONSTELLA_HOME || path.join(os.homedir(), '.constella');
+    const raw = JSON.parse(fs.readFileSync(path.join(home, 'credentials.json'), 'utf8'));
+    const apiKey = typeof raw?.api_key === 'string' ? raw.api_key.trim() : '';
+    const apiUrl = typeof raw?.api_url === 'string' ? raw.api_url.trim().replace(/\/+$/, '') : '';
+    if (!apiKey || !apiUrl) return null;
+    if (wantedBase && !sameServer(wantedBase, apiUrl)) return null;
+    return { apiKey, apiUrl };
+  } catch {
+    return null;
+  }
+}
 
 /** Clean a base URL (no trailing slash). */
 export function normalizeBaseUrl(raw) {
@@ -33,13 +70,26 @@ export function normalizeClient(raw, fallback = 'opencode') {
  */
 export function resolveConfig(options = {}, env = process.env) {
   const opt = options && typeof options === 'object' ? options : {};
-  const token = String(
+  const userId = String(opt.userId || opt.user_id || env.CONSTELLA_USER_ID || '').trim();
+  const workspaceId = String(opt.workspaceId || opt.workspace_id || env.CONSTELLA_WORKSPACE_ID || '').trim();
+  const explicitBase = String(opt.apiUrl || opt.api_url || env.CONSTELLA_API_URL || '').trim().replace(/\/+$/, '');
+  let token = String(
     opt.token || opt.sessionToken || opt.apiKey ||
     env.CONSTELLA_SESSION_TOKEN || env.CONSTELLA_TOKEN || env.CONSTELLA_API_KEY || ''
   ).trim();
-  const userId = String(opt.userId || opt.user_id || env.CONSTELLA_USER_ID || '').trim();
-  const workspaceId = String(opt.workspaceId || opt.workspace_id || env.CONSTELLA_WORKSPACE_ID || '').trim();
-  const apiUrl = normalizeBaseUrl(opt.apiUrl || opt.api_url || env.CONSTELLA_API_URL || DEFAULT_API_URL);
+  let apiUrl = normalizeBaseUrl(explicitBase || DEFAULT_API_URL);
+
+  // Personal mode fallback: read `~/.constella/credentials.json` saved by `constella setup`,
+  // strictly for personal mode (never send a personal `csk_` key to Platform `/users/{uid}` routes,
+  // and never send a saved key to a different server).
+  if (!token && !userId) {
+    const saved = readSavedCredentials(explicitBase, env);
+    if (saved) {
+      token = saved.apiKey;
+      if (!explicitBase) apiUrl = normalizeBaseUrl(saved.apiUrl);
+    }
+  }
+
   const agent = normalizeClient(opt.agent || opt.client || env.CONSTELLA_AGENT || 'opencode');
 
   const rawRecall = String(opt.recallMode || opt.recall_mode || env.CONSTELLA_RECALL_MODE || 'hybrid').trim().toLowerCase();
