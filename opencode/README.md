@@ -23,13 +23,13 @@ Shared workspace + private personal memory for **OpenCode v2** (`@opencode/plugi
 Using your server-side `cak_live_` Platform app key:
 
 ```sh
-# Create a workspace (auto-enrolled in Gemma-2)
+# Create a workspace (enables Brain-based shared memory)
 curl -X PUT https://api.constella.app/platform/v1/workspaces/ws_recruiting \
   -H "Authorization: Bearer $CONSTELLA_APP_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name":"Recruiting","extraction_instructions":"Never extract personal opinions or bias."}'
 
-# Add a member (provisions account, enables Brain, enrolls in Gemma-2)
+# Add a member (provisions account and enables Brain-based memory)
 curl -X PUT https://api.constella.app/platform/v1/workspaces/ws_recruiting/members/user_alice \
   -H "Authorization: Bearer $CONSTELLA_APP_KEY" \
   -H "Content-Type: application/json" \
