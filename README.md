@@ -22,7 +22,7 @@ The repo is `Beemo-AI/constella-plugin` on GitHub. You can install from there, o
 | `scripts/constella.mjs` | A tiny command line tool: `setup` (one-step install), `doctor`, and memory commands for shells and cloud agents. |
 | `scripts/mcp-headers.mjs` | Hands the saved key to Claude Code's MCP connection, so there is no second sign-in. |
 | `AGENTS.snippet.md` | The same rules as a block to paste into `AGENTS.md`, for tools without skills. |
-| `codex/`, `cursor/` | Setup for Codex and Cursor. |
+| `codex/`, `cursor/`, `opencode/` | Setup for Codex and Cursor, plus the OpenCode v2 plugin (`@opencode/plugin`). |
 
 No npm packages. It needs Node 18 or newer.
 

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Point OpenCode v2 at the Constella plugin (local path, GitHub, or published package).
+  "plugins": [
+    {
+      "id": "constella-memory",
+      "source": "./path/to/constella-plugin/opencode",
+      "options": {
+        // Recommended: mint a single-user `cps_` session token on your backend via
+        // POST /platform/v1/users/{uid}/session-token and inject it as an env var
+        // (`CONSTELLA_SESSION_TOKEN`). Never put your master `cak_live_` app key inside a session.
+        "apiUrl": "https://api.constella.app",
+        "userId": "user_alice",
+        "workspaceId": "ws_recruiting",
+
+        // Recall mode:
+        // - "hybrid" (default): static session-start block (cache-safe) + explicit tools
+        // - "tools": tools only (no automatic session-start fetch)
+        // - "every_turn": static session-start block + automatic recall on each user message
+        "recallMode": "hybrid",
+
+        // Transcript upload timing (always lands in the member's PRIVATE box):
+        // - "end" (default, recommended): upload full scrubbed transcript ONCE when session ends
+        // - "incremental": upload only new turns on `session.idle` (`chunk_seq: 1, 2, ...`)
+        // - "manual": only upload when `constella_upload_session` is called
+        "uploadMode": "end",
+
+        // Optional non-code places for teams without a git repo (recruiting, ops, support):
+        "places": [
+          { "kind": "role", "key": "senior-frontend" }
+        ]
+      }
+    }
+  ]
+}
